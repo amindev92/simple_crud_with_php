@@ -1,12 +1,69 @@
 <?php
 
 include_once "partials/header.php";
+include_once "../config/database.php";
 
 $title = "";
 $price = "";
 $date = "";
 $imagePath = "";
 
+$id = $_GET["id"] ?? null;
+
+if ($id) {
+    $statement = $pdo->prepare("SELECT * FROM products WHERE id = :id");
+    $statement->bindValue(":id", $id);
+    $statement->execute();
+    $product = $statement->fetch(PDO::FETCH_ASSOC);
+    $title = $product["title"];
+    $price = $product["price"];
+    $date = $product["create_time"];
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // var_dump($_SERVER);
+
+    $title = $_POST["title"];
+    $price = $_POST["price"];
+    $create_time = $_POST["create_date"];
+
+    $image = $_FILES["image"] ?? null;
+
+    if ($image and $image["tmp_name"]) {
+        // var_dump($image);
+
+        if (!is_dir("../assets/img")) {
+            mkdir("../assets/img");
+        }
+
+        $imagePath = "../assets/img/" . randomName(8) . "/" . $image["name"];
+
+        mkdir(dirname($imagePath));
+        move_uploaded_file($image["tmp_name"], $imagePath);
+    }
+
+    $stmt = $pdo->prepare("UPDATE products SET title = :title, image=:image, price= :price WHERE id = :id");
+
+    $stmt->bindValue(":title", $title);
+    $stmt->bindValue(":price", $price);
+    $stmt->bindValue(":image", $imagePath);
+    $stmt->bindValue(":id", $id);
+    $stmt->execute();
+
+    header("Location:../index.php");
+    exit;
+}
+
+function randomName($num)
+{
+    $string = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ@#_-";
+    $finalString = "";
+    for ($i = 0; $i < $num - 1; $i++) {
+        $randNum = rand(0, strlen($string)  - 1);
+        $finalString .= $string[$randNum];
+    }
+    return $finalString;
+}
 
 
 ?>
